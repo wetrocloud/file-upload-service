@@ -5,6 +5,9 @@ import os
 import random
 import datetime
 
+# Start application command 
+# $ uvicorn main:app --reload
+
 app = FastAPI()
 
 # AWS S3 Configuration
