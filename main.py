@@ -55,3 +55,7 @@ async def upload_file(collection_id: str = Form(...), file: UploadFile = File(..
         return {"filename": file.filename, "url": file_url, "message": "File uploaded successfully", "success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
+
+@app.get("/health/")
+async def health_check():
+    return {"status": "ok", "message": "Service is running", "success": True}
