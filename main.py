@@ -49,6 +49,6 @@ async def upload_file(collection_id: str = Form(...), file: UploadFile = File(..
     try:
         s3_client.upload_fileobj(file.file, S3_BUCKET_NAME, s3_path)
         file_url = f"https://{S3_BUCKET_NAME}.s3.amazonaws.com/{s3_path}"
-        return {"filename": file.filename, "url": file_url, "message": "File uploaded successfully"}
+        return {"filename": file.filename, "url": file_url, "message": "File uploaded successfully", "success": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
