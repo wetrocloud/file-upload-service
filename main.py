@@ -4,6 +4,7 @@ import boto3
 import os
 import random
 import datetime
+from botocore.exceptions import NoCredentialsError
 
 # Start application command 
 # $ uvicorn main:app --reload
@@ -12,6 +13,8 @@ app = FastAPI()
 
 # AWS S3 Configuration
 S3_BUCKET_NAME = "wetro"
+S3_FOLDER_NAME = "api_file_uploads"
+EXPIRATION_TIME = 600  # 10 minutes in seconds
 
 # Allowed file types
 ALLOWED_EXTENSIONS = {"csv", "xls", "xlsx", "docx", "doc", "epub", "hwp", "ipynb", "jpeg", "jpg", "mbox", "md", "mp3", "mp4", "pdf", "png", "ppt", "pptm", "pptx"}
@@ -40,22 +43,39 @@ async def upload_file(collection_id: str = Form(...), file: UploadFile = File(..
     file_extension = file.filename.split(".")[-1].lower()
     if file_extension not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail=f"Unsupported file type: .{file_extension}")
-    
+
     # Reset file pointer after reading
     await file.seek(0)
-    
+
     # Generate formatted file name
     new_file_name = generate_file_name(file.filename)
     s3_path = f"{collection_id}/{new_file_name}"
-    
+
     # Upload to S3
     try:
-        s3_client.upload_fileobj(file.file, S3_BUCKET_NAME, s3_path)
-        file_url = f"https://{S3_BUCKET_NAME}.s3.amazonaws.com/{s3_path}"
-        return {"filename": file.filename, "url": file_url, "message": "File uploaded successfully", "success": True}
+        s3_client.upload_fileobj(file.file, S3_BUCKET_NAME, f"{S3_FOLDER_NAME}/{s3_path}")
+
+        # Generate a pre-signed URL valid for 10 minutes
+        presigned_url = s3_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": S3_BUCKET_NAME, "Key": f"{S3_FOLDER_NAME}/{s3_path}"},
+            ExpiresIn=EXPIRATION_TIME
+        )
+
+        return {
+            "filename": file.filename,
+            "url": presigned_url,  # URL acts as an access token
+            "message": "File uploaded successfully",
+            "success": True,
+            "expires_in": f"{EXPIRATION_TIME // 60} minutes"
+        }
+
+    except NoCredentialsError:
+        raise HTTPException(status_code=403, detail="Invalid AWS credentials")
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
 
-@app.get("/health/")
-async def health_check():
+@app.get("/")
+async def main_index():
     return {"status": "ok", "message": "Service is running", "success": True}
