@@ -17,7 +17,7 @@ S3_FOLDER_NAME = "api_file_uploads"
 EXPIRATION_TIME = 600  # 10 minutes in seconds
 
 # Allowed file types
-ALLOWED_EXTENSIONS = {"csv", "xls", "xlsx", "docx", "doc", "epub", "hwp", "ipynb", "jpeg", "jpg", "mbox", "md", "mp3", "mp4", "pdf", "png", "ppt", "pptm", "pptx"}
+ALLOWED_EXTENSIONS = {"csv", "xls", "xlsx", "docx", "doc", "epub", "hwp", "ipynb", "jpeg", "jpg", "mbox", "md", "mp3", "mp4", "pdf", "png", "ppt", "pptm", "pptx", "txt", "zip", "json", "xml", "html", "js", "css", "svg", "yaml", "yml"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 
