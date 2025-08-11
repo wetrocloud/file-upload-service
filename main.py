@@ -14,6 +14,9 @@ app = FastAPI()
 # AWS S3 Configuration
 S3_BUCKET_NAME = "wetro"
 S3_FOLDER_NAME = "api_file_uploads"
+
+TABS_S3_BUCKET_NAME = "tabs-editor"
+
 EXPIRATION_TIME = 600  # 10 minutes in seconds
 
 # Allowed file types
@@ -75,6 +78,71 @@ async def upload_file(collection_id: str = Form(...), file: UploadFile = File(..
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
+
+
+"""
+Uploads a file to the S3 bucket.
+
+@param document_id: The ID of the document to upload the file to.
+@param file: The file to upload.
+@param folder_name: The name of the folder to upload the file to.
+
+@return: A dictionary containing the filename, URL, message, success, expires_in, and document_id.
+
+
+Folder names include:
+- temp
+- saved
+- modified
+"""
+@app.post("/tabs/upload/")
+async def upload_tabs_file(document_id: str = Form(...), file: UploadFile = File(...), folder_name: str = Form(...)):
+    # Check file size
+    contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
+    
+    # Check file extension
+    file_extension = file.filename.split(".")[-1].lower()
+    if file_extension not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: .{file_extension}")
+
+    # Reset file pointer after reading
+    await file.seek(0)
+
+    # Generate formatted file name
+    new_file_name = generate_file_name(file.filename)
+    s3_path = f"{document_id}/{new_file_name}"
+
+    # Upload to S3
+    try:
+        s3_client.upload_fileobj(file.file, S3_BUCKET_NAME, f"{folder_name}/{s3_path}")
+
+        # Generate a pre-signed URL valid for 10 minutes
+        presigned_url = s3_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": S3_BUCKET_NAME, "Key": f"{folder_name}/{s3_path}"},
+            ExpiresIn=EXPIRATION_TIME
+        )
+
+        return {
+            "filename": file.filename,
+            "url": presigned_url,  # URL acts as an access token
+            "message": "File uploaded successfully",
+            "success": True,
+            "expires_in": f"{EXPIRATION_TIME // 60} minutes",
+            "document_id": document_id
+        }
+
+    except NoCredentialsError:
+        raise HTTPException(status_code=403, detail="Invalid AWS credentials")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
+
+
+
+
 
 @app.get("/")
 async def main_index():
