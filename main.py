@@ -94,6 +94,7 @@ Folder names include:
 - temp
 - saved
 - modified
+- jlf
 """
 @app.post("/tabs/upload/")
 async def upload_tabs_file(document_id: str = Form(...), file: UploadFile = File(...), folder_name: str = Form(...)):
