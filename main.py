@@ -28,8 +28,6 @@ ALLOWED_EXTENSIONS = {"csv", "xls", "xlsx", "docx", "doc", "epub", "hwp", "ipynb
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 
-# Initialize S3 client
-s3_client = boto3.client("s3")
 
 def generate_file_name(original_name: str) -> str:
     """Generates a URL-friendly file name with date and random number."""
@@ -41,6 +39,8 @@ def generate_file_name(original_name: str) -> str:
 
 @app.post("/upload/")
 async def upload_file(collection_id: str = Form(...), file: UploadFile = File(...)):
+    # Initialize S3 client
+    s3_client = boto3.client("s3", region_name="us-east-1")
     # Check file size
     contents = await file.read()
     if len(contents) > MAX_FILE_SIZE:
@@ -102,6 +102,7 @@ Folder names include:
 """
 @app.post("/tabs/upload/")
 async def upload_tabs_file(document_id: str = Form(...), file: UploadFile = File(...), folder_name: str = Form(...)):
+    s3_client = boto3.client("s3", region_name="us-east-2")
     # Check file size
     contents = await file.read()
     if len(contents) > MAX_FILE_SIZE:
