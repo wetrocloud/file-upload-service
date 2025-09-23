@@ -5,9 +5,13 @@ import os
 import random
 import datetime
 from botocore.exceptions import NoCredentialsError
+from dotenv import load_dotenv
 
-# Start application command 
+# Start application command
 # $ uvicorn main:app --reload
+
+# Load variables from .env into the environment
+load_dotenv()
 
 app = FastAPI()
 
@@ -117,12 +121,12 @@ async def upload_tabs_file(document_id: str = Form(...), file: UploadFile = File
 
     # Upload to S3
     try:
-        s3_client.upload_fileobj(file.file, S3_BUCKET_NAME, f"{folder_name}/{s3_path}")
+        s3_client.upload_fileobj(file.file, TABS_S3_BUCKET_NAME, f"{folder_name}/{s3_path}")
 
         # Generate a pre-signed URL valid for 10 minutes
         presigned_url = s3_client.generate_presigned_url(
             "get_object",
-            Params={"Bucket": S3_BUCKET_NAME, "Key": f"{folder_name}/{s3_path}"},
+            Params={"Bucket": TABS_S3_BUCKET_NAME, "Key": f"{folder_name}/{s3_path}"},
             ExpiresIn=EXPIRATION_TIME
         )
 
