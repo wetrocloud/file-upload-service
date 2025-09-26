@@ -124,11 +124,12 @@ async def upload_tabs_file(document_id: str = Form(...), file: UploadFile = File
     try:
         s3_client.upload_fileobj(file.file, TABS_S3_BUCKET_NAME, f"{folder_name}/{s3_path}")
 
-        # Generate a pre-signed URL valid for 10 minutes
+        # Generate a pre-signed URL valid for 2 days
+        tabs_expiration = 172800  # 2 days in seconds
         presigned_url = s3_client.generate_presigned_url(
             "get_object",
             Params={"Bucket": TABS_S3_BUCKET_NAME, "Key": f"{folder_name}/{s3_path}"},
-            ExpiresIn=EXPIRATION_TIME
+            ExpiresIn=tabs_expiration 
         )
 
         return {
@@ -136,7 +137,7 @@ async def upload_tabs_file(document_id: str = Form(...), file: UploadFile = File
             "url": presigned_url,  # URL acts as an access token
             "message": "File uploaded successfully",
             "success": True,
-            "expires_in": f"{EXPIRATION_TIME // 60} minutes",
+            "expires_in": f"{tabs_expiration // (24 * 3600)} days",
             "document_id": document_id
         }
 
