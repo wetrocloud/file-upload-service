@@ -147,7 +147,26 @@ async def upload_tabs_file(document_id: str = Form(...), file: UploadFile = File
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
 
-
+@app.get("/tabs/presigned-url/")
+async def get_presigned_upload_url(document_id: str, folder_name: str, filename: str):
+    s3_client = boto3.client("s3", region_name="us-east-2")
+    
+    # Generate formatted file name
+    new_file_name = generate_file_name(filename)
+    s3_path = f"{document_id}/{new_file_name}"
+    
+    # Generate presigned URL for PUT upload (not GET)
+    presigned_url = s3_client.generate_presigned_url(
+        "put_object",  # Changed from "get_object" to "put_object"
+        Params={"Bucket": TABS_S3_BUCKET_NAME, "Key": f"{folder_name}/{s3_path}"},
+        ExpiresIn=900  # 15 minutes
+    )
+    
+    return {
+        "upload_url": presigned_url,
+        "expires_in": 900,
+        "s3_path": f"{folder_name}/{s3_path}"
+    }
 
 
 
